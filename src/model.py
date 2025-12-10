@@ -1,6 +1,7 @@
 import torch
 import torchvision.transforms.v2 as T
 from torch import nn
+import torch.nn.functional as F
 
 
 class UNet(nn.Module):
@@ -34,7 +35,7 @@ class UNet(nn.Module):
         x = self.lvl1_up(x, lvl1)
 
         x = self.out(x)
-        x = T.functional.resize(x, batch.shape[2:])
+        x = F.interpolate(x, batch.shape[2:])
 
         return x
 
@@ -54,14 +55,14 @@ class UpLevel(nn.Module):
     def __init__(self, in_channels: int):
         super().__init__()
         self.up_conv = nn.Conv2d(in_channels, in_channels // 2, kernel_size=2)
-        self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
+        self.upsample = nn.Upsample(scale_factor=2)
         self.embed = Embed(in_channels, in_channels // 2)
 
     def forward(self, x: torch.Tensor, cat: torch.Tensor) -> torch.Tensor:
         x = self.up_conv(x)
         x = self.upsample(x)
 
-        crop = T.functional.center_crop(cat, x.shape[2:])
+        crop = T.functional.center_crop(cat, list(x.shape[2:]))
         x = torch.cat((x, crop), dim=1)
 
         x = self.embed(x)
