@@ -10,9 +10,9 @@ class UNet(nn.Module):
         self.lvl2_down = DownLevel(64, 128)
         self.lvl3_down = DownLevel(128, 256)
         self.lvl4_down = DownLevel(256, 512)
-        
+
         self.lvl5 = Embed(512, 1024)
-        
+
         self.lvl4_up = UpLevel(1024, 56)
         self.lvl3_up = UpLevel(512, 104)
         self.lvl2_up = UpLevel(256, 200)
@@ -25,7 +25,7 @@ class UNet(nn.Module):
         x, lvl2 = self.lvl2_down(x)
         x, lvl3 = self.lvl3_down(x)
         x, lvl4 = self.lvl4_down(x)
-        
+
         x = self.lvl5(x)
 
         x = self.lvl4_up(x, lvl4)
@@ -37,7 +37,8 @@ class UNet(nn.Module):
         x = T.functional.resize(x, batch.shape[2:])
 
         return x
-    
+
+
 class DownLevel(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
@@ -54,7 +55,7 @@ class UpLevel(nn.Module):
         super().__init__()
         self.size = size
         self.up_conv = nn.Conv2d(in_channels, in_channels // 2, kernel_size=2)
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         self.embed = Embed(in_channels, in_channels // 2)
 
     def forward(self, x: torch.Tensor, cat: torch.Tensor) -> torch.Tensor:
@@ -66,6 +67,7 @@ class UpLevel(nn.Module):
 
         x = self.embed(x)
         return x
+
 
 class Embed(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
