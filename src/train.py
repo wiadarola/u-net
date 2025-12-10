@@ -88,9 +88,9 @@ def main(num_epochs: int) -> None:
             accuracy.update(y_hat_cls, y)
             f1_score.update(y_hat_cls, y)
 
-        writer.add_scalar("train/loss", mean_loss.compute(), epoch)
-        writer.add_scalar("train/accuracy", accuracy.compute(), epoch)
-        writer.add_scalar("train/f1_score", f1_score.compute(), epoch)
+        writer.add_scalar("loss/train", mean_loss.compute(), epoch)
+        writer.add_scalar("accuracy/train", accuracy.compute(), epoch)
+        writer.add_scalar("f1_score/train", f1_score.compute(), epoch)
 
         mean_loss.reset()
         accuracy.reset()
@@ -109,9 +109,11 @@ def main(num_epochs: int) -> None:
                 accuracy.update(y_hat_cls, y)
                 f1_score.update(y_hat_cls, y)
 
-        writer.add_scalar("val/loss", mean_loss.compute(), epoch)
-        writer.add_scalar("val/accuracy", accuracy.compute(), epoch)
-        writer.add_scalar("val/f1_score", f1_score.compute(), epoch)
+        writer.add_scalar("loss/val", mean_loss.compute(), epoch)
+        writer.add_scalar("accuracy/val", accuracy.compute(), epoch)
+        writer.add_scalar("f1_score/val", f1_score.compute(), epoch)
+    
+    writer.close()
 
 
 if __name__ == "__main__":
