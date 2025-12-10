@@ -1,7 +1,7 @@
 import torch
+import torch.nn.functional as F
 import torchvision.transforms.v2 as T
 from torch import nn
-import torch.nn.functional as F
 
 
 class UNet(nn.Module):

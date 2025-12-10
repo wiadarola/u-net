@@ -112,7 +112,7 @@ def main(num_epochs: int) -> None:
         writer.add_scalar("loss/val", mean_loss.compute(), epoch)
         writer.add_scalar("accuracy/val", accuracy.compute(), epoch)
         writer.add_scalar("f1_score/val", f1_score.compute(), epoch)
-    
+
     writer.close()
 
 
