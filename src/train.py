@@ -42,10 +42,11 @@ def main(num_epochs: int) -> None:
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters())
 
+    mean_loss = torchmetrics.MeanMetric()
     accuracy = torchmetrics.Accuracy(task="multiclass", num_classes=3)
     f1_score = torchmetrics.F1Score(task="multiclass", num_classes=3)
     for epoch in tqdm(range(num_epochs), "Epoch"):
-        total_loss = 0
+        mean_loss.reset()
         accuracy.reset()
         f1_score.reset()
         model.train()
@@ -57,16 +58,16 @@ def main(num_epochs: int) -> None:
             optimizer.step()
             optimizer.zero_grad()
 
-            total_loss += loss
+            mean_loss.update(loss)
             y_hat_cls = y_hat.argmax(dim=1)
             accuracy.update(y_hat_cls, y)
             f1_score.update(y_hat_cls, y)
 
-        writer.add_scalar("train/loss", total_loss / len(train_loader), epoch)
+        writer.add_scalar("train/loss", mean_loss.compute(), epoch)
         writer.add_scalar("train/accuracy", accuracy.compute(), epoch)
         writer.add_scalar("train/f1_score", f1_score.compute(), epoch)
 
-        total_loss = 0
+        mean_loss.reset()
         accuracy.reset()
         f1_score.reset()
         model.eval()
@@ -75,11 +76,11 @@ def main(num_epochs: int) -> None:
                 y_hat = model(x)
                 loss = criterion(y_hat, y)
 
-                total_loss += loss
+                mean_loss.update(loss)
                 accuracy.update(y_hat, y)
                 f1_score.update(y_hat, y)
 
-        writer.add_scalar("train/loss", total_loss / len(val_loader), epoch)
+        writer.add_scalar("train/loss", mean_loss.compute(), epoch)
         writer.add_scalar("train/accuracy", accuracy.compute(), epoch)
         writer.add_scalar("train/f1_score", f1_score.compute(), epoch)
 
