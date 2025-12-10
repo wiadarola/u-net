@@ -1,6 +1,6 @@
 import torch
-from torch import nn
 import torchvision.transforms.v2 as T
+from torch import nn
 
 
 class UNet(nn.Module):

@@ -1,12 +1,13 @@
+import argparse
+
 import torch
-from torch import nn
+import torch.utils.tensorboard
+import torchmetrics
 import torchvision
 import torchvision.transforms.v2 as T
+from torch import nn
 from torch.utils.data import DataLoader
-import torchmetrics
-import torch.utils.tensorboard
 from tqdm import tqdm
-import argparse
 
 from src.model import UNet
 
