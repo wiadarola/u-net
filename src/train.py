@@ -19,17 +19,36 @@ def parse_cli_args() -> argparse.Namespace:
 
 
 def get_dataloaders() -> tuple[DataLoader, DataLoader]:
-    ToTensor = T.Compose((T.ToImage(), T.ToDtype(torch.float32, scale=True)))
+    image_transform = T.Compose(
+        (
+            T.Resize((512, 512)),
+            T.ToImage(),
+            T.ToDtype(torch.float32, scale=True),
+        )
+    )
+
+    target_transform = T.Compose(
+        (
+            T.Resize((512, 512), interpolation=T.InterpolationMode.NEAREST),
+            T.ToImage(),
+            T.ToDtype(torch.long, scale=False),
+            T.Lambda(lambda m: m.squeeze(0)),  # 1 H W -> H W
+            T.Lambda(lambda m: m - 1),  # [1,3] -> [0,2]
+        )
+    )
+
     dataset = torchvision.datasets.OxfordIIITPet(
         "data/",
         split="trainval",
         target_types="segmentation",
         download=True,
-        transforms=T.Compose((T.Resize((512, 512)), ToTensor)),
+        transform=image_transform,
+        target_transform=target_transform,
     )
+
     train_set, val_set = torch.utils.data.random_split(dataset, (0.8, 0.2))
-    train_loader = DataLoader(train_set, shuffle=True)
-    val_loader = DataLoader(val_set)
+    train_loader = DataLoader(train_set, shuffle=True, batch_size=2)
+    val_loader = DataLoader(val_set, batch_size=2)
     return train_loader, val_loader
 
 
@@ -38,28 +57,33 @@ def main(num_epochs: int) -> None:
 
     train_loader, val_loader = get_dataloaders()
 
-    model = UNet(in_channels=3, out_channels=3)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = UNet(in_channels=3, out_channels=3).to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters())
 
-    mean_loss = torchmetrics.MeanMetric()
-    accuracy = torchmetrics.Accuracy(task="multiclass", num_classes=3)
-    f1_score = torchmetrics.F1Score(task="multiclass", num_classes=3)
+    mean_loss = torchmetrics.MeanMetric().to(device)
+    accuracy = torchmetrics.Accuracy(task="multiclass", num_classes=3).to(device)
+    f1_score = torchmetrics.F1Score(task="multiclass", num_classes=3).to(device)
+
     for epoch in tqdm(range(num_epochs), "Epoch"):
         mean_loss.reset()
         accuracy.reset()
         f1_score.reset()
         model.train()
         for x, y in tqdm(train_loader, "Training", leave=False):
-            y_hat = model(x).flatten(2)
-            y = y.unique(return_inverse=True)[1].flatten(1)
+            x = x.to(device, non_blocking=True)
+            y = y.to(device, non_blocking=True)
+
+            y_hat = model(x)
             loss: torch.Tensor = criterion(y_hat, y)
+            mean_loss.update(loss)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
 
-            mean_loss.update(loss)
             y_hat_cls = y_hat.argmax(dim=1)
             accuracy.update(y_hat_cls, y)
             f1_score.update(y_hat_cls, y)
@@ -74,12 +98,16 @@ def main(num_epochs: int) -> None:
         model.eval()
         with torch.no_grad():
             for x, y in tqdm(val_loader, "Validating", leave=False):
+                x = x.to(device, non_blocking=True)
+                y = y.to(device, non_blocking=True)
+
                 y_hat = model(x)
                 loss = criterion(y_hat, y)
-
                 mean_loss.update(loss)
-                accuracy.update(y_hat, y)
-                f1_score.update(y_hat, y)
+
+                y_hat_cls = y_hat.argmax(dim=1)
+                accuracy.update(y_hat_cls, y)
+                f1_score.update(y_hat_cls, y)
 
         writer.add_scalar("val/loss", mean_loss.compute(), epoch)
         writer.add_scalar("val/accuracy", accuracy.compute(), epoch)
