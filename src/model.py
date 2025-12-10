@@ -13,10 +13,10 @@ class UNet(nn.Module):
 
         self.lvl5 = Embed(512, 1024)
 
-        self.lvl4_up = UpLevel(1024, 56)
-        self.lvl3_up = UpLevel(512, 104)
-        self.lvl2_up = UpLevel(256, 200)
-        self.lvl1_up = UpLevel(128, 392)
+        self.lvl4_up = UpLevel(1024)
+        self.lvl3_up = UpLevel(512)
+        self.lvl2_up = UpLevel(256)
+        self.lvl1_up = UpLevel(128)
 
         self.out = nn.Conv2d(64, out_channels, kernel_size=1)
 
@@ -51,9 +51,8 @@ class DownLevel(nn.Module):
 
 
 class UpLevel(nn.Module):
-    def __init__(self, in_channels: int, size: int):
+    def __init__(self, in_channels: int):
         super().__init__()
-        self.size = size
         self.up_conv = nn.Conv2d(in_channels, in_channels // 2, kernel_size=2)
         self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         self.embed = Embed(in_channels, in_channels // 2)
