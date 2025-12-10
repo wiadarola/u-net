@@ -80,9 +80,9 @@ def main(num_epochs: int) -> None:
                 accuracy.update(y_hat, y)
                 f1_score.update(y_hat, y)
 
-        writer.add_scalar("train/loss", mean_loss.compute(), epoch)
-        writer.add_scalar("train/accuracy", accuracy.compute(), epoch)
-        writer.add_scalar("train/f1_score", f1_score.compute(), epoch)
+        writer.add_scalar("val/loss", mean_loss.compute(), epoch)
+        writer.add_scalar("val/accuracy", accuracy.compute(), epoch)
+        writer.add_scalar("val/f1_score", f1_score.compute(), epoch)
 
 
 if __name__ == "__main__":
